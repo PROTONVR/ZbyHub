@@ -1,0 +1,1960 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101113">
+  <meta name="description" content="Detranslator — zamieniaj tekst w koci i rybi bełkot, alfabet Morse'a oraz proste, odwracalne szyfry.">
+  <title>Detranslator — tłumacz bez sensu</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101113;
+      --panel: #191a1d;
+      --raised: #202125;
+      --line: #303136;
+      --text: #f1f0ed;
+      --muted: #98999f;
+      --accent: #BF00FF;
+      --accent-hover: #D24DFF;
+      --ink: #12051a;
+      --danger: #ff8279;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 83% -10%, rgb(191 0 255 / 10%), transparent 35rem),
+        var(--bg);
+    }
+    button, textarea, select, input { font: inherit; }
+    button { color: inherit; }
+    .app { width: min(1040px, calc(100% - 40px)); margin: auto; padding: 28px 0 42px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 66px; }
+    .brand { display: flex; align-items: center; gap: 11px; color: inherit; text-decoration: none; }
+    .brand-mark {
+      display: grid;
+      width: 39px;
+      height: 39px;
+      place-items: center;
+      border-radius: 12px 12px 12px 3px;
+      color: var(--ink);
+      background: var(--accent);
+      font-size: 20px;
+      font-weight: 950;
+      transform: rotate(-5deg);
+    }
+    .brand-name { font-size: 15px; font-weight: 900; letter-spacing: .15em; }
+    .local-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .local-label::before { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); content: ""; }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+    .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(42px, 7vw, 72px); line-height: .96; letter-spacing: -.075em; }
+    .intro-copy { max-width: 330px; margin: 0 0 4px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .translator { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+    .app-tabs { display: flex; gap: 6px; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding: 0 0 9px; }
+    .app-tab { min-height: 38px; border: 1px solid transparent; border-radius: 8px; padding: 0 14px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 750; cursor: pointer; }
+    .app-tab[aria-selected="true"] { border-color: var(--line); color: var(--text); background: var(--panel); }
+    .app-panel[hidden] { display: none; }
+    .format-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+    .format-panel .text-grid { border-top: 1px solid var(--line); }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; border-bottom: 1px solid var(--line); padding: 16px; }
+    .mode-field { display: grid; min-width: 220px; flex: 1; gap: 7px; }
+    .field-label { color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .06em; }
+    select, input[type="number"] {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 11px;
+      color: var(--text);
+      background: var(--raised);
+      font-size: 12px;
+    }
+    select { cursor: pointer; }
+    .shift-field { display: none; width: 142px; gap: 7px; }
+    .shift-field.visible { display: grid; }
+    .extra-field { display: none; min-width: 130px; gap: 7px; }
+    .extra-field.visible { display: grid; }
+    .key-field { flex: 1; }
+    .key-field input { min-width: 0; min-height: 42px; border: 1px solid var(--line); border-radius: 8px; padding: 0 11px; color: var(--text); background: var(--raised); font-size: 12px; }
+    .parameter-pair { display: none; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .parameter-pair.visible { display: grid; }
+    .parameter-pair label { display: grid; gap: 7px; }
+    .direction-button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 13px;
+      color: var(--text);
+      background: var(--raised);
+      font-size: 11px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .direction-button:hover { border-color: #5b5d63; }
+    .direction-icon { color: var(--accent); font-size: 17px; }
+    .language-row { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); align-items: center; border-bottom: 1px solid var(--line); padding: 12px 16px; }
+    .language-label { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .language-label:last-child { text-align: right; }
+    .direction-mark { justify-self: center; color: var(--accent); font-size: 15px; }
+    .text-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .text-side { min-width: 0; }
+    .text-side + .text-side { border-left: 1px solid var(--line); }
+    .text-side-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 15px 0; color: var(--muted); font-size: 10px; }
+    .counter { font-variant-numeric: tabular-nums; }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 245px;
+      resize: vertical;
+      border: 0;
+      padding: 13px 15px 17px;
+      color: var(--text);
+      background: transparent;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    textarea:focus { outline: 0; }
+    textarea::placeholder { color: #686a70; }
+    textarea[readonly] { color: #d5c9df; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; border-top: 1px solid var(--line); padding: 13px 15px; }
+    .button {
+      display: inline-flex;
+      min-height: 39px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      color: var(--text);
+      background: var(--raised);
+      font-size: 10px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .button:hover:not(:disabled) { border-color: #5b5d63; }
+    .button:disabled { cursor: not-allowed; opacity: .45; }
+    .primary { border-color: var(--accent); color: var(--ink); background: var(--accent); }
+    .primary:hover:not(:disabled) { border-color: var(--accent-hover); background: var(--accent-hover); }
+    .error { display: none; width: 100%; margin: 2px 0 0; color: var(--danger); font-size: 10px; line-height: 1.5; }
+    .error.visible { display: block; }
+    .mode-note { margin: 13px 1px 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .mode-note strong { color: var(--text); }
+    footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 9px 16px; margin-top: 23px; color: #777980; font-size: 10px; }
+    footer span:last-child { color: var(--accent); }
+    button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 680px) {
+      header { margin-bottom: 48px; }
+      .intro { align-items: start; flex-direction: column; gap: 13px; }
+      .intro-copy { max-width: 480px; }
+      .text-grid { grid-template-columns: 1fr; }
+      .text-side + .text-side { border-top: 1px solid var(--line); border-left: 0; }
+      textarea { min-height: 175px; }
+      .language-row { grid-template-columns: 1fr 35px 1fr; }
+    }
+    @media (max-width: 440px) {
+      .app { width: calc(100% - 26px); padding-top: 19px; }
+      .toolbar { align-items: stretch; }
+      .mode-field { min-width: 100%; }
+      .shift-field { width: 100%; }
+      .direction-button { flex: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <a class="brand" href="../../index.html" aria-label="ZbyHub">
+        <span class="brand-mark" aria-hidden="true">D</span>
+        <span class="brand-name">DETRANSLATOR</span>
+      </a>
+      <span class="local-label">Działa lokalnie · bez wysyłania tekstu</span>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Tłumaczenia, których nie było w planie</p>
+        <h1 id="page-title">Sens? Opcjonalny.</h1>
+      </div>
+      <p class="intro-copy">Zamień zdanie w miauczenie, rybi bełkot albo wiadomość zakodowaną prostym szyfrem. Wpisz tekst i patrz, jak sens znika.</p>
+    </section>
+
+    <section aria-label="Narzędzia Detranslator">
+      <div class="app-tabs" role="tablist" aria-label="Wybierz narzędzie">
+        <button class="app-tab" id="translateTab" type="button" role="tab" aria-selected="true" aria-controls="translatePanel">Tłumaczenia i szyfry</button>
+        <button class="app-tab" id="formatTab" type="button" role="tab" aria-selected="false" aria-controls="formatPanel">Formatowanie tekstu</button>
+      </div>
+      <div class="app-panel" id="translatePanel" role="tabpanel" aria-labelledby="translateTab">
+      <div class="translator">
+        <div class="toolbar">
+          <label class="mode-field" for="mode">
+            <span class="field-label">WYBIERZ DETRANSLATOR</span>
+            <select id="mode">
+              <optgroup label="Języki kompletnie bez sensu">
+                <option value="cat">Koci · meow, mrr i inne miauki</option>
+                <option value="fish">Rybny · blub, bloop i inne bulgoty</option>
+              </optgroup>
+              <optgroup label="Kody i szyfry, które można odwrócić">
+                <option value="binary">Binarny · bajty tekstu UTF-8</option>
+                <option value="hex">Szesnastkowy · bajty UTF-8 jako hex</option>
+                <option value="base64">Base64 · zapis bajtów tekstu</option>
+                <option value="url">URL · kodowanie procentowe UTF-8</option>
+                <option value="morse">Alfabet Morse’a · z obsługą polskich znaków</option>
+                <option value="caesar">Szyfr Cezara · klasyczne przesunięcie liter</option>
+                <option value="rot13">ROT13 · przesunięcie o 13 miejsc</option>
+                <option value="rot47">ROT47 · obrót znaków ASCII</option>
+                <option value="atbash">Atbash · alfabet od końca</option>
+                <option value="vigenere">Vigenère · szyfr ze słowem-kluczem</option>
+                <option value="autokey">Autokey · klucz rośnie z tekstem</option>
+                <option value="railFence">Płotkowy · zapis zygzakiem</option>
+                <option value="affine">Afiniczny · mnożenie i przesunięcie</option>
+                <option value="bacon">Bacon · bity ukryte jako A/B</option>
+                <option value="reverse">Od tyłu · odwrócone znaki</option>
+              </optgroup>
+              <optgroup label="Stylizacja językowa">
+                <option value="oldPolish">Staropolszczyzna · stylizacja humorystyczna</option>
+                <option value="pirate">Piracki · ahoy, kapitanie!</option>
+                <option value="emoji">Emojijski · słowa w obrazkach</option>
+                <option value="bureaucratic">Urzędowy · bełkot formularzowy</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="shift-field" id="shiftField" for="shift">
+            <span class="field-label">PRZESUNIĘCIE</span>
+            <input id="shift" type="number" min="1" max="25" step="1" value="3">
+          </label>
+          <label class="extra-field key-field" id="keyField" for="cipherKey">
+            <span class="field-label">SŁOWO-KLUCZ (A–Z)</span>
+            <input id="cipherKey" type="text" value="ZBYCHU" maxlength="64" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="extra-field" id="railsField" for="rails">
+            <span class="field-label">LICZBA SZYN</span>
+            <input id="rails" type="number" min="2" max="20" step="1" value="3">
+          </label>
+          <div class="extra-field" id="affineField">
+            <span class="field-label">PARAMETRY SZYFRU</span>
+            <div class="parameter-pair visible">
+              <label>
+                <span class="field-label">MNOŻNIK a</span>
+                <input id="affineA" type="number" min="1" max="25" step="1" value="5">
+              </label>
+              <label>
+                <span class="field-label">PRZESUNIĘCIE b</span>
+                <input id="affineB" type="number" min="0" max="25" step="1" value="8">
+              </label>
+            </div>
+          </div>
+          <button class="direction-button" id="directionButton" type="button" aria-label="Zmień kierunek na odszyfrowywanie">
+            <span class="direction-icon" aria-hidden="true">⇄</span>
+            <span id="directionLabel">Zaszyfruj</span>
+          </button>
+        </div>
+        <div class="language-row" aria-live="polite">
+          <span class="language-label" id="inputLabel">Tekst źródłowy</span>
+          <span class="direction-mark" id="directionMark" aria-hidden="true">→</span>
+          <span class="language-label" id="outputLabel">Koci</span>
+        </div>
+        <div class="text-grid">
+          <div class="text-side">
+            <div class="text-side-heading">
+              <label for="inputText" id="inputHeading">Wpisz tekst</label>
+              <span class="counter" id="inputCounter">0 znaków</span>
+            </div>
+            <textarea id="inputText" placeholder="Wpisz lub wklej tekst…" spellcheck="false" aria-label="Tekst do przetłumaczenia"></textarea>
+          </div>
+          <div class="text-side">
+            <div class="text-side-heading">
+              <label for="outputText" id="outputHeading">Tłumaczenie</label>
+              <span class="counter" id="outputCounter">0 znaków</span>
+            </div>
+            <textarea id="outputText" placeholder="Tutaj pojawi się wynik…" readonly spellcheck="false" aria-label="Wynik tłumaczenia"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="button primary" id="copyButton" type="button" disabled>Kopiuj wynik</button>
+          <button class="button" id="clearButton" type="button">Wyczyść</button>
+          <p class="error" id="errorMessage" role="alert"></p>
+        </div>
+      </div>
+      <p class="mode-note" id="modeNote"></p>
+      </div>
+      <div class="app-panel format-panel" id="formatPanel" role="tabpanel" aria-labelledby="formatTab" hidden>
+        <div class="toolbar">
+          <label class="mode-field" for="formatMode">
+            <span class="field-label">WYBIERZ EFEKT TEKSTOWY</span>
+            <select id="formatMode">
+              <optgroup label="Wielkość liter">
+                <option value="uppercase">WIELKIE LITERY</option>
+                <option value="lowercase">małe litery</option>
+                <option value="alternating">sPoNgEbOb · litery na zmianę</option>
+              </optgroup>
+              <optgroup label="Ozdobne znaki Unicode">
+                <option value="smallCaps">ᴍᴀŁᴇ ᴋᴀᴘɪᴛᴀʟɪᴋɪ</option>
+                <option value="circled">Ⓞⓑⓡ⓪ⓣⓐⓒⓩⓐⓝⓔ</option>
+                <option value="fullwidth">Ｆｕｌｌｗｉｄｔｈ</option>
+                <option value="superscript">ᵀᵉᵏˢᵗ ᵘ ᵍᵒʳʸ</option>
+                <option value="subscript">ₜₑₖₛₜ ᵤ dₒłᵤ</option>
+                <option value="zalgo">Z̷̬̪̰̱̖̻̗̍͝A̸̤̬̩̹̦̐̋L̶͖̗̻̅̾͠G̸̱̩͑̀Ŏ̵̝̋</option>
+              </optgroup>
+              <optgroup label="Odwrócone">
+                <option value="upsideDown">ʇǝʞsɐʇ ıuɐɔǝʍɹoʇs</option>
+                <option value="reversed">Odwróć cały tekst</option>
+              </optgroup>
+            </select>
+          </label>
+        </div>
+        <div class="language-row" aria-live="polite">
+          <span class="language-label">Tekst źródłowy</span>
+          <span class="direction-mark" aria-hidden="true">→</span>
+          <span class="language-label" id="formatOutputLabel">Wielkie litery</span>
+        </div>
+        <div class="text-grid">
+          <div class="text-side">
+            <div class="text-side-heading">
+              <label for="formatInput">Wpisz tekst</label>
+              <span class="counter" id="formatInputCounter">0 znaków</span>
+            </div>
+            <textarea id="formatInput" placeholder="Wpisz tekst do sformatowania…" spellcheck="false" aria-label="Tekst do sformatowania"></textarea>
+          </div>
+          <div class="text-side">
+            <div class="text-side-heading">
+              <label for="formatOutput">Wynik</label>
+              <span class="counter" id="formatOutputCounter">0 znaków</span>
+            </div>
+            <textarea id="formatOutput" placeholder="Tutaj pojawi się sformatowany tekst…" readonly spellcheck="false" aria-label="Sformatowany tekst"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="button primary" id="formatCopyButton" type="button" disabled>Kopiuj wynik</button>
+          <button class="button" id="formatClearButton" type="button">Wyczyść</button>
+          <p class="error" id="formatError" role="alert"></p>
+        </div>
+      </div>
+    </section>
+    <footer>
+      <span>Detranslator · zabawa słowem i prostymi kodami</span>
+      <span>Autorem jest nieznany developer "Zbigniew"</span>
+    </footer>
+  </main>
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const cats = ["meow", "mrr", "purr", "miau", "nya", "prrr", "mew", "mrow", "mra", "nyaa", "mrrau", "purrp", "miaou", "mri", "meoww", "nyan"];
+      const fish = ["blub", "bloop", "glub", "blorp", "glug", "bloopi", "sploosh", "blabba", "blib", "gloop", "splish", "glabba", "blubbi", "glupp", "splosh", "blubba"];
+      const morse = {
+        A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.", G: "--.", H: "....",
+        I: "..", J: ".---", K: "-.-", L: ".-..", M: "--", N: "-.", O: "---", P: ".--.",
+        Q: "--.-", R: ".-.", S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-",
+        Y: "-.--", Z: "--..", 0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-",
+        5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----.",
+        ".": ".-.-.-", ",": "--..--", "?": "..--..", "!": "-.-.--", "'": ".----.",
+        "\"": ".-..-.", "(": "-.--.", ")": "-.--.-", "&": ".-...", ":": "---...",
+        ";": "-.-.-.", "=": "-...-", "+": ".-.-.", "-": "-....-", "_": "..--.-",
+        "$": "...-..-", "@": ".--.-."
+      };
+      const reverseMorse = Object.fromEntries(Object.entries(morse).map(([character, code]) => [code, character]));
+      const descriptions = {
+        cat: "<strong>Koci</strong> zamienia każdy znak w miauki. To żartobliwy, odwracalny zapis — odszyfruj go przyciskiem nad tekstem.",
+        fish: "<strong>Rybny</strong> bulgocze zamiast mówić. Każdy bajt dostaje dwa bąbelkowe symbole, więc oryginalny tekst da się odzyskać.",
+        binary: "<strong>Binarny</strong> pokazuje bajty UTF-8 jako ósemki zer i jedynek. To zapis danych, a nie szyfrowanie.",
+        morse: "<strong>Morse</strong> koduje litery, cyfry i popularną interpunkcję. Pozostałe znaki, w tym polskie litery i spacje, zapisuje jako jawne kody Unicode.",
+        caesar: "<strong>Szyfr Cezara</strong> przesuwa litery alfabetu łacińskiego o wybraną liczbę miejsc. Jest łatwy do złamania i służy wyłącznie do zabawy.",
+        rot13: "<strong>ROT13</strong> przesuwa litery o 13 miejsc. Ponieważ szyfr jest własnym odwrotnością, ten sam przycisk szyfruje i odszyfrowuje.",
+        atbash: "<strong>Atbash</strong> odwraca alfabet łaciński (A ↔ Z). To historyczny, bardzo prosty szyfr — nie używaj go do tajnych informacji.",
+        vigenere: "<strong>Vigenère</strong> używa powtarzanego słowa-klucza do przesuwania liter. Klucz może zawierać litery A–Z; polskie znaki i interpunkcja pozostają bez zmian.",
+        railFence: "<strong>Szyfr płotkowy</strong> zapisuje znaki zygzakiem po wybranej liczbie szyn. Przestawia tekst, nie zmieniając jego znaków.",
+        affine: "<strong>Szyfr afiniczny</strong> oblicza (a·x+b) modulo 26. Mnożnik a musi być względnie pierwszy z 26; poprawne wartości to 1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23 i 25.",
+        oldPolish: "<strong>Staropolszczyzna</strong> przekłada popularne słowa i całe zwroty na archaizujące odpowiedniki. Nieznane słowa pozostawia bez zmian, zamiast dopisywać przypadkowe końcówki. To humorystyczna stylizacja, nie wierny przekład historyczny.",
+        hex: "<strong>Szesnastkowy</strong> zapisuje każdy bajt UTF-8 jako dwie cyfry 0–9 i A–F.",
+        base64: "<strong>Base64</strong> przedstawia bajty tekstu jako znaki ASCII. To kodowanie, nie szyfrowanie ani kompresja.",
+        url: "<strong>URL</strong> zamienia tekst na zapis procentowy UTF-8. Przydaje się do parametrów adresów, nie ukrywa treści.",
+        rot47: "<strong>ROT47</strong> obraca drukowalne znaki ASCII o 47 miejsc. Litery, cyfry i interpunkcja wracają po ponownym zastosowaniu.",
+        autokey: "<strong>Autokey</strong> rozwija słowo-klucz o kolejne litery jawnego tekstu. Podaj ten sam klucz przy odszyfrowaniu; to historyczny szyfr, nie nowoczesne zabezpieczenie.",
+        bacon: "<strong>Bacon</strong> zapisuje każdy bajt UTF-8 jako osiem symboli A/B. Czytelne jako szyfr-zabawa i w pełni odwracalne.",
+        reverse: "<strong>Od tyłu</strong> odwraca kolejność znaków Unicode. To prosta zabawa, nie szyfr.",
+        pirate: "<strong>Piracki</strong> dodaje do rozpoznanych słów marynarską gadkę. To jednokierunkowa, żartobliwa stylizacja.",
+        emoji: "<strong>Emojijski</strong> zamienia rozpoznane słowa na obrazki. Nieznane słowa pozostają bez zmian.",
+        bureaucratic: "<strong>Urzędowy</strong> korzysta z obszernego słownika codziennych słów i zwrotów, zamieniając je w rozwlekły żargon formularzy. Nieznane wyrazy pozostawia bez zmian."
+      };
+      let decrypting = false;
+
+      function encodeWords(text, vocabulary) {
+        const bytes = new TextEncoder().encode(text);
+        return Array.from(bytes, (byte) => `${vocabulary[byte >> 4]} ${vocabulary[byte & 15]}`).join(" ");
+      }
+
+      function decodeWords(text, vocabulary) {
+        const tokens = text.trim() ? text.trim().split(/\s+/) : [];
+        if (tokens.length % 2) throw new Error("Kod jest niepełny: każdy znak wymaga pary symboli.");
+        const lookup = new Map(vocabulary.map((token, index) => [token, index]));
+        const bytes = new Uint8Array(tokens.length / 2);
+        for (let index = 0; index < tokens.length; index += 2) {
+          const high = lookup.get(tokens[index]);
+          const low = lookup.get(tokens[index + 1]);
+          if (high === undefined || low === undefined) throw new Error("Ten tekst nie pasuje do wybranego języka.");
+          bytes[index / 2] = (high << 4) | low;
+        }
+        try {
+          return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        } catch {
+          throw new Error("Kod zawiera nieprawidłowe bajty UTF-8.");
+        }
+      }
+
+      function encodeBinary(text) {
+        return Array.from(new TextEncoder().encode(text), (byte) => byte.toString(2).padStart(8, "0")).join(" ");
+      }
+
+      function decodeBinary(text) {
+        const tokens = text.trim() ? text.trim().split(/\s+/) : [];
+        if (tokens.some((token) => !/^[01]{8}$/.test(token))) {
+          throw new Error("Wpisz bajty binarne po 8 bitów każdy, oddzielone spacjami.");
+        }
+        const bytes = Uint8Array.from(tokens, (token) => parseInt(token, 2));
+        try {
+          return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        } catch {
+          throw new Error("Kod binarny nie tworzy poprawnego tekstu UTF-8.");
+        }
+      }
+
+      function encodeHex(text) {
+        return Array.from(new TextEncoder().encode(text), (byte) => byte.toString(16).padStart(2, "0")).join(" ");
+      }
+
+      function decodeHex(text) {
+        const tokens = text.trim() ? text.trim().split(/[\s,:-]+/) : [];
+        if (tokens.some((token) => !/^[0-9a-f]{2}$/i.test(token))) {
+          throw new Error("Wpisz bajty szesnastkowe po dwie cyfry, np. 5A 62 79.");
+        }
+        const bytes = Uint8Array.from(tokens, (token) => Number.parseInt(token, 16));
+        try {
+          return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        } catch {
+          throw new Error("Zapis szesnastkowy nie tworzy poprawnego tekstu UTF-8.");
+        }
+      }
+
+      function encodeBase64(text) {
+        const bytes = new TextEncoder().encode(text);
+        let binary = "";
+        for (let index = 0; index < bytes.length; index += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+        }
+        return btoa(binary);
+      }
+
+      function decodeBase64(text) {
+        const normalized = text.replace(/\s+/g, "");
+        if (normalized && !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(normalized)) {
+          throw new Error("Wpisz poprawny zapis Base64.");
+        }
+        try {
+          const binary = atob(normalized);
+          const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+          return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        } catch {
+          throw new Error("Zapis Base64 nie zawiera poprawnego tekstu UTF-8.");
+        }
+      }
+
+      function encodeUrl(text) {
+        return encodeURIComponent(text);
+      }
+
+      function decodeUrl(text) {
+        try {
+          return decodeURIComponent(text);
+        } catch {
+          throw new Error("Zapis URL zawiera nieprawidłowy znak procentowy lub UTF-8.");
+        }
+      }
+
+      function encodeMorse(text) {
+        return Array.from(text, (character) => {
+          if (/\s/u.test(character)) return `~${character.codePointAt(0).toString(16)}~`;
+          const code = morse[character.toUpperCase()];
+          if (!code || Array.from(character).length !== 1) return `~${character.codePointAt(0).toString(16)}~`;
+          return character !== character.toUpperCase() ? `^${code}` : code;
+        }).join(" ");
+      }
+
+      function decodeMorse(text) {
+        if (!text.trim()) return "";
+        return text.trim().split(/\s+/).map((token) => {
+          const escaped = /^~([0-9a-f]+)~$/i.exec(token);
+          if (escaped) {
+            const codePoint = Number.parseInt(escaped[1], 16);
+            if (!Number.isInteger(codePoint) || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)) {
+              throw new Error("Kod Unicode w wiadomości Morse’a jest nieprawidłowy.");
+            }
+            return String.fromCodePoint(codePoint);
+          }
+          const lowercase = token.startsWith("^");
+          const character = reverseMorse[lowercase ? token.slice(1) : token];
+          if (!character) throw new Error(`Nieznany symbol Morse’a: ${token}`);
+          return lowercase ? character.toLowerCase() : character;
+        }).join("");
+      }
+
+      function rotateLatin(text, shift) {
+        return Array.from(text, (character) => {
+          const code = character.codePointAt(0);
+          const base = code >= 65 && code <= 90 ? 65 : code >= 97 && code <= 122 ? 97 : -1;
+          return base < 0 ? character : String.fromCharCode(base + (code - base + shift + 26) % 26);
+        }).join("");
+      }
+
+      function atbash(text) {
+        return Array.from(text, (character) => {
+          const code = character.codePointAt(0);
+          if (code >= 65 && code <= 90) return String.fromCharCode(90 - (code - 65));
+          if (code >= 97 && code <= 122) return String.fromCharCode(122 - (code - 97));
+          return character;
+        }).join("");
+      }
+
+      function transformVigenere(text, key, decrypt) {
+        const normalizedKey = key.toUpperCase();
+        if (!/^[A-Z]+$/.test(normalizedKey)) throw new Error("Słowo-klucz może zawierać wyłącznie litery A–Z.");
+        let keyIndex = 0;
+        return Array.from(text, (character) => {
+          const code = character.codePointAt(0);
+          const base = code >= 65 && code <= 90 ? 65 : code >= 97 && code <= 122 ? 97 : -1;
+          if (base < 0) return character;
+          const offset = normalizedKey.charCodeAt(keyIndex++ % normalizedKey.length) - 65;
+          return String.fromCharCode(base + (code - base + (decrypt ? -offset : offset) + 26) % 26);
+        }).join("");
+      }
+
+      function transformAutokey(text, key, decrypt) {
+        const normalizedKey = key.toUpperCase();
+        if (!/^[A-Z]+$/.test(normalizedKey)) throw new Error("Słowo-klucz może zawierać wyłącznie litery A–Z.");
+        const keyStream = Array.from(normalizedKey, (character) => character.charCodeAt(0) - 65);
+        const result = [];
+        let letterIndex = 0;
+        for (const character of text) {
+          const code = character.codePointAt(0);
+          const base = code >= 65 && code <= 90 ? 65 : code >= 97 && code <= 122 ? 97 : -1;
+          if (base < 0) {
+            result.push(character);
+            continue;
+          }
+          const value = code - base;
+          const offset = keyStream[letterIndex];
+          if (offset === undefined) {
+            throw new Error("Za krótki strumień klucza; sprawdź klucz i tekst.");
+          }
+          const transformed = (value + (decrypt ? -offset : offset) + 26) % 26;
+          result.push(String.fromCharCode(base + transformed));
+          keyStream.push(decrypt ? transformed : value);
+          letterIndex++;
+        }
+        return result.join("");
+      }
+
+      function railFenceEncrypt(text, rails) {
+        const characters = Array.from(text);
+        if (rails < 2 || rails > 20) throw new Error("Liczba szyn musi wynosić od 2 do 20.");
+        const rows = Array.from({ length: rails }, () => []);
+        let row = 0;
+        let direction = 1;
+        for (const character of characters) {
+          rows[row].push(character);
+          if (row === 0) direction = 1;
+          else if (row === rails - 1) direction = -1;
+          row += direction;
+        }
+        return rows.flat().join("");
+      }
+
+      function railFenceDecrypt(text, rails) {
+        const characters = Array.from(text);
+        if (rails < 2 || rails > 20) throw new Error("Liczba szyn musi wynosić od 2 do 20.");
+        const pattern = [];
+        let row = 0;
+        let direction = 1;
+        for (let index = 0; index < characters.length; index++) {
+          pattern.push(row);
+          if (row === 0) direction = 1;
+          else if (row === rails - 1) direction = -1;
+          row += direction;
+        }
+        const counts = Array(rails).fill(0);
+        pattern.forEach((rail) => counts[rail]++);
+        const rows = [];
+        let offset = 0;
+        for (const count of counts) {
+          rows.push(characters.slice(offset, offset + count));
+          offset += count;
+        }
+        const positions = Array(rails).fill(0);
+        return pattern.map((rail) => rows[rail][positions[rail]++]).join("");
+      }
+
+      function modularInverse(value, modulus) {
+        for (let candidate = 1; candidate < modulus; candidate++) {
+          if ((value * candidate) % modulus === 1) return candidate;
+        }
+        throw new Error("Mnożnik a musi być względnie pierwszy z 26 (np. 5, 7 lub 11).");
+      }
+
+      function affine(text, decrypt) {
+        const a = Number($("affineA").value);
+        const b = Number($("affineB").value);
+        if (!Number.isInteger(a) || a < 1 || a > 25 || !Number.isInteger(b) || b < 0 || b > 25) {
+          throw new Error("Wybierz mnożnik a od 1 do 25 i przesunięcie b od 0 do 25.");
+        }
+        const inverse = modularInverse(a, 26);
+        return Array.from(text, (character) => {
+          const code = character.codePointAt(0);
+          const base = code >= 65 && code <= 90 ? 65 : code >= 97 && code <= 122 ? 97 : -1;
+          if (base < 0) return character;
+          const value = code - base;
+          const transformed = decrypt ? (inverse * (value - b + 26)) % 26 : (a * value + b) % 26;
+          return String.fromCharCode(base + transformed);
+        }).join("");
+      }
+
+      function stylizeOldPolish(text) {
+        const words = {
+          "czy ty jesteś upośledzony": "azaliż żartujesz, waszmość",
+          "czy jesteś upośledzony": "azaliż żartujesz, waszmość",
+          "co ty sobie wyobrażasz": "cóż sobie waść imaginujesz",
+          "nie chce mi się": "nie mam ochoty się trudzić",
+          "nie mogę się doczekać": "z niecierpliwością wyglądam tej chwili",
+          "nie powinieneś tego robić": "nie godzi się waćpanu tego czynić",
+          "nie wiem co robić": "nie wiem, jak postąpić, waszmości",
+          "nie ma za co": "nie masz za co dziękować",
+          "wszystko w porządku": "wszystko jest po myśli",
+          "co masz na myśli": "cóż waść masz na myśli",
+          "o czym mówisz": "o czymże waść prawisz",
+          "nie gadaj głupot": "nie pleć waść niedorzeczności",
+          "przestań się wygłupiać": "zaprzestańże waść krotochwil",
+          "daj mi znać": "racz mnie powiadomić",
+          "nie martw się": "nie frasuj się, waszmość",
+          "wszystkiego najlepszego": "wszelkiej pomyślności życzę",
+          "miłego dnia": "dnia miłego waćpanu życzę",
+          "miłego wieczoru": "wieczoru miłego życzę",
+          "jak się nazywasz": "jakie miano waść nosisz",
+          "skąd jesteś": "z jakich stron waść pochodzisz",
+          "dokąd idziesz": "dokądże waść podążasz",
+          "ile to kosztuje": "jakaż jest tego cena",
+          "co to jest": "cóż to jest za rzecz",
+          "gdzie jest": "gdzież się znajduje",
+          "pomóż mi": "racz mi waść dopomóc",
+          "potrzebuję pomocy": "potrzebuję waściowego wsparcia",
+          "chodź ze mną": "podążaj ze mną, waszmość",
+          "zostaw mnie w spokoju": "dajże mi waść święty spokój",
+          "idź stąd": "oddal się stąd, waszmość",
+          "wynoś się": "oddal się niezwłocznie",
+          "zamknij mordę": "zamilknijże, waszmość, i języka na wodzy trzymaj",
+          "kurwa mać": "na wszystkie diabły",
+          "spierdalaj": "waćpan niechaj zmyka w oka mgnieniu",
+          "wypierdalaj": "oddal się niezwłocznie, waszmość",
+          "dziękuję za pomoc": "wielce dziękuję za waściowe wsparcie",
+          "bardzo mi przykro": "wielce mi z tego powodu przykro",
+          "to nie moja wina": "nie z mojej to winy",
+          "masz rację": "słuszność waść posiadasz",
+          "nie masz racji": "waść słuszności nie posiadasz",
+          "dobrze cię widzieć": "rad jestem waści ujrzeć",
+          "uważaj na siebie": "miejże się waść na baczności",
+          "zaraz przyjdę": "niebawem przybędę",
+          "już idę": "już podążam",
+          "co u ciebie": "cóż słychać u waćpana",
+          "mam nadzieję": "żywię nadzieję",
+          "boję się": "lękam się",
+          "jest mi zimno": "zimno mi wielce",
+          "jest mi gorąco": "gorąco mi wielce",
+          "jestem zmęczony": "jestem wielce utrudzony",
+          "jestem zmęczona": "jestem wielce utrudzona",
+          "jestem głodny": "głód mi doskwiera",
+          "jestem głodna": "głód mi doskwiera",
+          "jestem szczęśliwy": "dola mi sprzyja",
+          "jestem szczęśliwa": "dola mi sprzyja",
+          "to jest niesamowite": "rzecz to niebywała",
+          "nie wierzę": "nie daję temu wiary",
+          "rozumiem": "pojmuję",
+          "nieprawda": "nie jest to prawdą",
+          "prawda": "prawda to",
+          "oczywiście": "zaiste",
+          "na pewno": "z pewnością",
+          "być może": "być może",
+          "moim zdaniem": "wedle mego mniemania",
+          "w każdym razie": "tak czy owak",
+          "na przykład": "przykładowo",
+          "w tej chwili": "w tejże chwili",
+          "po co": "w jakimże celu",
+          "dlaczego nie": "czemuż by nie",
+          "ile masz lat": "ileż wiosen waść liczysz",
+          "jak długo": "przez jakiż czas",
+          "witaj ponownie": "witajże ponownie, waszmość",
+          "do widzenia": "żegnam waćpana",
+          "na zdrowie": "ku zdrowiu",
+          "smacznego": "niechaj jadło smakuje",
+          "nie mam pojęcia": "nie mam o tym żadnej wiedzy",
+          "nie wiem": "nie wiem, waćpanie",
+          "nie rozumiem": "nie pojmuję, cóż waść rzecze",
+          "nie ma sprawy": "rzecz nie stanowi",
+          "co ty robisz": "cóż czynisz, waszmość",
+          "co się dzieje": "cóż się tu wyprawia",
+          "jak się masz": "jakże się waszmość miewa",
+          "spierdalaj stąd": "waćpan niechaj zmyka stąd w oka mgnieniu",
+          "wypierdalaj stąd": "oddal się niezwłocznie z tego miejsca, waszmość",
+          "odpierdol się": "dajże mi waść święty spokój",
+          "zamknij się": "zamilknijże, waszmość",
+          "co robisz": "cóż czynisz",
+          "daj mi spokój": "dajże mi święty pokój",
+          "daj spokój": "dajże pokój",
+          "idź sobie": "oddal się, waszmość",
+          "chodź tutaj": "podejdźże tutaj, waszmość",
+          "zaraz wracam": "niebawem powrócę",
+          "do zobaczenia": "do rychłego ujrzenia",
+          "dobranoc": "spokojnej nocy życzę",
+          "dobry pomysł": "przednia to myśl",
+          "świetna robota": "robota przednia, waćpanie",
+          "bardzo ci dziękuję": "wielceć waćpanu dziękuję",
+          "dziękuję bardzo": "wielceć dziękuję",
+          "kocham cię": "miłuję cię, waszmość",
+          "co za głupota": "cóż za niedorzeczność",
+          "idź do diabła": "idźże do czarta",
+          "cholera jasna": "niech to piorun trzaśnie",
+          "zajebiście": "wybornie, na wszystkie diabły",
+          "głupi jesteś": "nie nazbytś roztropny, waszmość",
+          "ala": "Ala",
+          "czy": "azaliż",
+          "jestem": "jestem",
+          "jesteś": "waść jesteś",
+          "jest": "jestże",
+          "jesteśmy": "myśmy są",
+          "jesteście": "jesteścież",
+          "są": "bywają",
+          "był": "bywał",
+          "była": "bywała",
+          "byli": "bywali",
+          "były": "bywały",
+          "będziesz": "będzieszże",
+          "będziemy": "będziem",
+          "będziecie": "będziecież",
+          "byłem": "bywałem",
+          "byłam": "bywałam",
+          "byliśmy": "bywaliśmy",
+          "byłyśmy": "bywałyśmy",
+          "nie jestem": "nie jestemże",
+          "nie jesteś": "waść nie jesteś",
+          "nie jest": "nie jestże",
+          "nie są": "nie bywają",
+          "ma": "posiada",
+          "mam": "posiadam",
+          "masz": "waść posiadasz",
+          "mamy": "posiadamy",
+          "mają": "posiadają",
+          "miał": "posiadał",
+          "miała": "posiadała",
+          "mieli": "posiadali",
+          "miałem": "posiadałem",
+          "miałam": "posiadałam",
+          "miałeś": "posiadałeś",
+          "miałaś": "posiadałaś",
+          "miało": "posiadało",
+          "będę miał": "będę posiadał",
+          "będę miała": "będę posiadała",
+          "macie": "posiadacie",
+          "kota": "kocisko",
+          "kotem": "kociskiem",
+          "kotu": "kocisku",
+          "kot": "kocisko",
+          "koty": "kociska",
+          "psa": "psiaka",
+          "psem": "psiakiem",
+          "psu": "psiakowi",
+          "pies": "psiak",
+          "psy": "psiaki",
+          "mysz": "mysz polna",
+          "myszy": "myszy polne",
+          "ptak": "ptaszysko",
+          "ptaki": "ptaszyska",
+          "koń": "rumak",
+          "konia": "rumaka",
+          "konie": "rumaki",
+          "krowa": "krasula",
+          "krowę": "krasulę",
+          "krowy": "krasule",
+          "być": "bywać",
+          "będę": "będęć",
+          "będzie": "będzieć",
+          "będą": "będąć",
+          "chcę": "pragnę",
+          "chcesz": "waść pragniesz",
+          "chce": "pragnie",
+          "chciałem": "pragnąłem",
+          "chciałam": "pragnęłam",
+          "chciał": "pragnął",
+          "chciała": "pragnęła",
+          "chcieli": "pragnęli",
+          "chciałbym": "pragnąłbym",
+          "chciałabym": "pragnęłabym",
+          "chciałbyś": "waść pragnąłbyś",
+          "chciałabyś": "waść pragnęłabyś",
+          "chcemy": "pragniem",
+          "chcą": "pragną",
+          "możesz": "waść możesz",
+          "możecie": "możecież",
+          "mogę": "mogę",
+          "mógł": "mógłby",
+          "mogła": "mogłaby",
+          "mogli": "mogliby",
+          "mogłabym": "mogłabym",
+          "moglibyśmy": "moglibyśmy",
+          "muszę": "muszę",
+          "musisz": "waść musisz",
+          "musi": "winien jest",
+          "musicie": "musicież",
+          "muszą": "musząże",
+          "musiałem": "musiałem",
+          "musiałam": "musiałam",
+          "powinieneś": "waść winieneś",
+          "powinniśmy": "winniśmy",
+          "powinni": "winni",
+          "powinny": "winny",
+          "chcielibyśmy": "pragnęlibyśmy",
+          "wiem": "wiem",
+          "wiesz": "waść wiesz",
+          "wie": "wieże",
+          "wiemy": "wiemyż",
+          "wiecie": "wiecież",
+          "wiedzą": "wiedząże",
+          "wiedział": "wiedziałże",
+          "wiedziałam": "wiedziałamże",
+          "wiedzieli": "wiedzieliże",
+          "sądzę": "mniemam",
+          "sądzisz": "waść mniemasz",
+          "uważam": "mniemam",
+          "uważasz": "waść mniemasz",
+          "pamiętam": "pamiętamże",
+          "pamiętasz": "waść pamiętasz",
+          "zapomniałem": "zapomniałemże",
+          "zapomniałam": "zapomniałamże",
+          "widzę": "dostrzegam",
+          "widzisz": "waść dostrzegasz",
+          "widziałem": "dostrzegłem",
+          "widziałam": "dostrzegłam",
+          "słyszę": "słyszęć",
+          "słyszy": "słyszyże",
+          "słucham": "słuchamże",
+          "mówię": "rzekę",
+          "mówisz": "waść rzeczesz",
+          "mówi": "rzecze",
+          "mówimy": "rzeczemy",
+          "mówicie": "rzeczecie",
+          "mówią": "rzeką",
+          "powiedziałem": "rzekłem",
+          "powiedziałam": "rzekłam",
+          "powiedzieli": "rzekli",
+          "powiedzieliśmy": "rzekliśmy",
+          "powiedziałaś": "rzekłaś",
+          "powiedziałeś": "rzekłeś",
+          "robię": "czynię",
+          "robisz": "waść czynisz",
+          "robicie": "czynicie",
+          "zrobiłem": "uczyniłem",
+          "zrobiłam": "uczyniłam",
+          "zrobiłeś": "uczyniłeś",
+          "zrobiłaś": "uczyniłaś",
+          "zrobili": "uczynili",
+          "idę": "podążam",
+          "idziesz": "waść podążasz",
+          "idziemy": "podążamy",
+          "idziecie": "podążacie",
+          "poszedłem": "podążyłem",
+          "poszłam": "podążyłam",
+          "poszedłeś": "waść podążyłeś",
+          "poszłaś": "waść podążyłaś",
+          "przychodzę": "przybywam",
+          "przychodzisz": "waść przybywasz",
+          "przyszedł": "przybył",
+          "przyszła": "przybyła",
+          "daję": "dajęć",
+          "dajesz": "waść dajesz",
+          "dostałem": "otrzymałem",
+          "dostałam": "otrzymałam",
+          "kupuję": "nabywam",
+          "kupujesz": "waść nabywasz",
+          "kupiłem": "nabyłem",
+          "kupiłam": "nabyłam",
+          "lubię": "rad jestem",
+          "lubisz": "waść rad jesteś",
+          "lubi": "rad jest",
+          "lubimy": "radzi jesteśmy",
+          "lubią": "radzi są",
+          "nienawidzę": "wzgardzam",
+          "kocham": "miłuję",
+          "kochasz": "waść miłujesz",
+          "kocha": "miłuje",
+          "kochamy": "miłujemy",
+          "kochają": "miłują",
+          "cieszę się": "raduję się",
+          "cieszysz się": "waść się radujesz",
+          "boisz się": "waść się lękasz",
+          "czekam": "wyczekuję",
+          "czekasz": "waść wyczekujesz",
+          "pracuję": "trudzę się",
+          "pracujesz": "waść się trudzisz",
+          "pracujemy": "trudzimy się",
+          "odpoczywam": "zażywam wytchnienia",
+          "spać": "udać się na spoczynek",
+          "śpisz": "waść spoczywasz we śnie",
+          "jesz": "waść spożywasz",
+          "jemy": "spożywamy",
+          "piję": "pijęć",
+          "pijesz": "waść pijesz",
+          "pomagam": "wspomagam",
+          "pomagasz": "waść wspomagasz",
+          "szukam": "poszukuję",
+          "szukasz": "waść poszukujesz",
+          "znajduję": "odnajduję",
+          "znajdujesz": "waść odnajdujesz",
+          "przepraszam": "wybaczże, miłościwy panie",
+          "przepraszam cię": "racz mi waść wybaczyć",
+          "wybacz mi": "daruj mi waść",
+          "proszę cię": "błagam waćpana",
+          "proszę pana": "proszę waszmości",
+          "dziękuję": "dziękujęć wielce",
+          "dzięki": "dziękujęć",
+          "także": "również",
+          "jednak": "wszelako",
+          "chociaż": "aczkolwiek",
+          "zanim": "nim",
+          "potem": "później",
+          "później": "późniejże",
+          "wtedy": "wówczas",
+          "stąd": "z tego miejsca",
+          "stamtąd": "z tamtego miejsca",
+          "wszystko": "wszystkoż",
+          "każdy": "każden",
+          "każda": "każdaż",
+          "każde": "każdeż",
+          "nikt": "niktże",
+          "nic": "nicże",
+          "wszyscy": "wszyscyż",
+          "sam": "samże",
+          "sama": "samaż",
+          "samo": "samoż",
+          "inny": "odmienny",
+          "inna": "odmienna",
+          "inne": "odmienne",
+          "którego": "któregoż",
+          "której": "którejże",
+          "którym": "którymże",
+          "czego": "czegóż",
+          "komu": "komuż",
+          "kogo": "kogóż",
+          "dlaczego": "czemuż",
+          "ile": "ileż",
+          "wiele": "wieleż",
+          "mało": "niewiele",
+          "więcej": "więcejże",
+          "mniej": "mniejże",
+          "teraz": "jeno w tej chwili",
+          "zaraz": "niebawem",
+          "niedługo": "niebawem",
+          "wcześnie": "z rana",
+          "późno": "o późnej porze",
+          "poniedziałek": "dzień księżyca",
+          "wtorek": "dzień Marsa",
+          "środa": "dzień środkowy",
+          "czwartek": "dzień Jowisza",
+          "piątek": "dzień Wenery",
+          "sobota": "dzień odpoczynku",
+          "niedziela": "dzień Pański",
+          "godzina": "godzinaż",
+          "minuta": "chwila",
+          "chwila": "mgnienie",
+          "mężczyznę": "męża",
+          "mężczyzną": "mężem",
+          "kobietę": "niewiastę",
+          "kobietą": "niewiastą",
+          "dziecko": "dziatkię",
+          "dziecka": "dziatkięcia",
+          "dzieckiem": "dziatkięciem",
+          "dzieciom": "dziatkom",
+          "człowiekiem": "człekiem",
+          "ludzi": "ludziż",
+          "przyjaciół": "druhów",
+          "przyjaciółka": "druhna",
+          "przyjaciółkę": "druhnę",
+          "przyjaciółki": "druhny",
+          "koleżankę": "kompankę",
+          "koleżanki": "kompanki",
+          "kolegi": "kompana",
+          "koleżanką": "kompanką",
+          "domem": "domostwem",
+          "domowi": "domostwu",
+          "domach": "domostwach",
+          "pokoje": "komnaty",
+          "pokojem": "komnatą",
+          "drzwiami": "wrotami",
+          "okna": "okien",
+          "oknem": "okienkiem",
+          "stołu": "stołu biesiadnego",
+          "stołem": "stołem biesiadnym",
+          "krzesło": "zydel",
+          "krzesła": "zydla",
+          "krzesłem": "zydlem",
+          "łóżka": "łoża",
+          "miasto": "gród",
+          "miastem": "grodem",
+          "miastach": "grodach",
+          "drogi": "gościńce",
+          "drogę": "gościniec",
+          "drogą": "gościńcem",
+          "ulicę": "miejski trakt",
+          "ulicą": "traktem miejskim",
+          "samochodu": "powozu bez koni",
+          "samochodem": "powozem bez koni",
+          "samochody": "powozy bez koni",
+          "telefonu": "przyrządu do rozmowy na odległość",
+          "telefonem": "przyrządem do rozmowy na odległość",
+          "komputera": "machiny rachującej",
+          "komputerem": "machiną rachującą",
+          "książkę": "księgę",
+          "książką": "księgą",
+          "książce": "księdze",
+          "książkami": "księgami",
+          "filmu": "ruchomych obrazów",
+          "filmem": "ruchomymi obrazami",
+          "piosenkę": "pieśń",
+          "piosenki": "pieśni",
+          "chleba": "bochna",
+          "chlebem": "bochnem",
+          "mięsa": "pieczeni",
+          "mięsem": "pieczenią",
+          "wodę": "wodę źródlaną",
+          "wodą": "wodą źródlaną",
+          "kawę": "napój z palonych ziaren",
+          "herbatę": "napar z liści",
+          "piwa": "piwa z browaru",
+          "pieniądze": "grosiwa",
+          "pieniędzy": "grosiwa",
+          "pieniądzem": "groszem",
+          "pieniądzach": "groszach",
+          "pracę": "trud",
+          "pracą": "trudem",
+          "pracownicy": "czeladź",
+          "szkołę": "akademię",
+          "szkołą": "akademią",
+          "szkole": "akademii",
+          "nauczyciela": "bakałarza",
+          "nauczycielka": "bakałarzowa",
+          "nauczycielkę": "bakałarzową",
+          "ucznia": "żaka",
+          "uczennica": "żaczka",
+          "uczennicę": "żaczkę",
+          "uczniami": "żakami",
+          "lekcję": "naukę",
+          "lekcji": "nauki",
+          "dniem": "dniem onym",
+          "dniu": "dniu onym",
+          "nocy": "nocy onej",
+          "nocą": "nocą ciemną",
+          "poranek": "zaranie",
+          "wieczór": "wieczór ów",
+          "wieczora": "wieczoru onego",
+          "wczoraj": "dnia wczorajszego",
+          "dzisiaj": "dziś",
+          "jutro": "nazajutrz",
+          "tygodnia": "siedmiu dni",
+          "tygodniu": "siedmiu dniach",
+          "miesiąca": "miesiąca księżycowego",
+          "rokiem": "rokiem pańskim",
+          "lat": "wiosen",
+          "roku": "roku pańskiego",
+          "słońcem": "słońcem niebieskim",
+          "księżyca": "miesiąca na niebie",
+          "gwiazdy": "gwiazdy niebieskiej",
+          "nieba": "sklepienia niebieskiego",
+          "ziemię": "ziemię naszą",
+          "deszczu": "dżdżu",
+          "śniegiem": "białym puchem",
+          "wiatrem": "wichrem",
+          "ogniem": "płomieniem",
+          "drzewa": "drzewa wiekowego",
+          "drzewem": "drzewem wiekowym",
+          "kwiatem": "kwiatem polnym",
+          "koniem": "rumakiem",
+          "krową": "krasulą",
+          "dobrzy": "zacni",
+          "dobrego": "zacnego",
+          "dobrej": "zacnej",
+          "dobrym": "zacnym",
+          "złego": "niegodziwego",
+          "złej": "niegodziwej",
+          "złym": "niegodziwym",
+          "ładnego": "urodziwego",
+          "ładnej": "urodziwej",
+          "pięknego": "urodziwego",
+          "pięknej": "urodziwej",
+          "mądrego": "roztropnego",
+          "mądrej": "roztropnej",
+          "głupiego": "mało roztropnego",
+          "głupiej": "mało roztropnej",
+          "szybki": "chyży",
+          "szybkie": "chyże",
+          "szybkiego": "chyżego",
+          "szybkiej": "chyżej",
+          "wolna": "powolna",
+          "wolne": "powolne",
+          "duże": "niemałe",
+          "dużego": "niemałego",
+          "dużej": "niemałej",
+          "wielkie": "ogromne",
+          "wielkiego": "ogromnego",
+          "wielkiej": "ogromnej",
+          "stare": "sędziwe",
+          "starego": "sędziwego",
+          "starej": "sędziwej",
+          "młode": "młodeż",
+          "młodego": "młodziana",
+          "młodej": "panny młodej",
+          "ważne": "wielkiej wagi",
+          "ważnego": "wielkiej wagi",
+          "ważnej": "wielkiej wagi",
+          "szczęśliwe": "dobrej doli",
+          "smutnego": "frasobliwego",
+          "smutnej": "frasobliwej",
+          "kochany": "miłowany",
+          "kochana": "miłowana",
+          "kochane": "miłowane",
+          "robi": "czyni",
+          "robią": "czynią",
+          "robimy": "czynimy",
+          "robiłeś": "czyniłeś",
+          "robiłaś": "czyniłaś",
+          "pracuje": "trudzi się",
+          "pracują": "trudzą się",
+          "idzie": "podąża",
+          "idą": "podążają",
+          "jedzie": "mknie powozem",
+          "jedzą": "spożywają",
+          "je": "spożywa",
+          "pije": "pijeż",
+          "piją": "pijąże",
+          "powie": "rzeknie",
+          "powiedzieć": "rzec",
+          "widzi": "dostrzega",
+          "widzą": "dostrzegają",
+          "słyszysz": "waść słyszysz",
+          "daje": "dajeż",
+          "dają": "dająże",
+          "bierze": "bierzeż",
+          "biorę": "bioręć",
+          "kupuje": "nabywa",
+          "sprzedaje": "zbywa",
+          "myśli": "rozważa",
+          "myślę": "rozważam",
+          "zna": "znaże",
+          "znasz": "waść znasz",
+          "znajduje": "odnajduje",
+          "szuka": "poszukuje",
+          "czeka": "wyczekuje",
+          "stoi": "stoiże",
+          "siedzi": "zasiada",
+          "śpi": "spoczywa we śnie",
+          "śpię": "spoczywam we śnie",
+          "śmieje": "śmiejeż",
+          "płacze": "roni łzy",
+          "pomaga": "wspomaga",
+          "potrzebuje": "zapragnie",
+          "potrzebuję": "zapragnę",
+          "może": "być może",
+          "mogą": "mogąże",
+          "powinien": "winien",
+          "powinna": "winna",
+          "trzeba": "należy",
+          "musimy": "musimyć",
+          "wiadomo": "wiadomym jest",
+          "wiadomość": "wieść",
+          "wiadomości": "wieści",
+          "pytanie": "zapytanie",
+          "odpowiedź": "odpowiedźże",
+          "odpowiada": "odpowiadaże",
+          "imię": "miano",
+          "imienia": "miana",
+          "nazwisko": "miano rodowe",
+          "rodzina": "familia",
+          "rodzinę": "familię",
+          "matka": "rodzicielka",
+          "ojciec": "rodzic",
+          "brat": "brat rodzony",
+          "siostra": "siostra rodzona",
+          "dzieci": "dziatki",
+          "człowiek": "człek",
+          "człowieka": "człeka",
+          "ludzie": "ludzież",
+          "kobieta": "niewiasta",
+          "kobiety": "niewiasty",
+          "mężczyzna": "mąż",
+          "mężczyźni": "mężowie",
+          "przyjaciel": "druh",
+          "przyjaciela": "druha",
+          "przyjaciele": "druhowie",
+          "przyjacielu": "druhu",
+          "kolega": "kompan",
+          "koleżanka": "kompanka",
+          "pan": "jegomość",
+          "pani": "jejmość",
+          "państwo": "jaśnie państwo",
+          "dom": "domostwo",
+          "domu": "domostwie",
+          "domy": "domostwa",
+          "pokój": "komnata",
+          "pokoju": "komnacie",
+          "drzwi": "wrota",
+          "okno": "okienko",
+          "stół": "stół biesiadny",
+          "łóżko": "łoże",
+          "ogród": "ogród dworski",
+          "miasta": "grodu",
+          "wioska": "osada",
+          "droga": "gościniec",
+          "ulica": "miejski trakt",
+          "samochód": "powóz bez koni",
+          "autobus": "dyliżans zbiorowy",
+          "pociąg": "żelazny rumak",
+          "rower": "dwukołowy pojazd",
+          "telefon": "przyrząd do rozmowy na odległość",
+          "komputer": "machina rachująca",
+          "internet": "sieć wieści rozległa",
+          "książka": "księga",
+          "książki": "księgi",
+          "gazeta": "gazeta drukowana",
+          "film": "ruchome obrazy",
+          "muzyka": "muzyka dworska",
+          "piosenka": "pieśń",
+          "jedzenie": "jadło",
+          "jedzenia": "jadła",
+          "śniadanie": "poranny posiłek",
+          "obiad": "biesiada południowa",
+          "kolacja": "wieczerza",
+          "chleb": "bochen",
+          "mleko": "mleczywo",
+          "ser": "ser wiejski",
+          "mięso": "pieczeń",
+          "zupa": "polewka",
+          "jabłko": "owoc jabłoni",
+          "jabłka": "owoce jabłoni",
+          "kawa": "napój z palonych ziaren",
+          "herbata": "napar z liści",
+          "woda": "woda źródlana",
+          "piwo": "piwo z browaru",
+          "pieniądz": "grosz",
+          "praca": "trud",
+          "pracy": "trudu",
+          "szkoła": "akademia",
+          "szkoły": "akademie",
+          "nauczyciel": "bakałarz",
+          "uczeń": "żak",
+          "uczniowie": "żakowie",
+          "lekcja": "nauka",
+          "dzień": "dzień ów",
+          "dnia": "dnia onego",
+          "dni": "dni one",
+          "noc": "noc ciemna",
+          "rano": "o poranku",
+          "wieczorem": "z wieczora",
+          "tydzień": "siedem dni",
+          "miesiąc": "miesiąc księżycowy",
+          "rok": "rok pański",
+          "czas": "pora",
+          "czasu": "pory",
+          "świat": "świat ten",
+          "świata": "świata tego",
+          "słońce": "słońce niebieskie",
+          "księżyc": "miesiąc na niebie",
+          "gwiazda": "gwiazda niebieska",
+          "niebo": "sklepienie niebieskie",
+          "ziemia": "ziemia nasza",
+          "deszcz": "dżdż",
+          "śnieg": "biały puch",
+          "wiatr": "wicher",
+          "ogień": "płomień",
+          "drzewo": "drzewo wiekowe",
+          "kwiat": "kwiat polny",
+          "kwiaty": "kwiaty polne",
+          "ryba": "stworzenie wodne",
+          "dobry": "zacny",
+          "dobra": "zacna",
+          "dobre": "zacne",
+          "dobrze": "po myśli",
+          "zły": "niegodziwy",
+          "zła": "niegodziwa",
+          "złe": "niegodziwe",
+          "źle": "nie po myśli",
+          "ładny": "urodziwy",
+          "ładna": "urodziwa",
+          "piękny": "urodziwy",
+          "piękna": "urodziwa",
+          "brzydki": "szpetny",
+          "brzydka": "szpetna",
+          "mądry": "roztropny",
+          "mądra": "roztropna",
+          "głupi": "mało roztropny",
+          "głupia": "mało roztropna",
+          "szybka": "chyża",
+          "szybko": "chyżo",
+          "wolny": "powolny",
+          "wolno": "pomału",
+          "mały": "niewielki",
+          "mała": "niewielka",
+          "duży": "niemały",
+          "duża": "niemała",
+          "wielki": "ogromny",
+          "wielka": "ogromna",
+          "stary": "sędziwy",
+          "stara": "sędziwa",
+          "młody": "młodzieniec",
+          "młoda": "panna młoda",
+          "nowy": "nowy",
+          "nowa": "nowa",
+          "ważny": "wielkiej wagi",
+          "ważna": "wielkiej wagi",
+          "śmieszny": "krotochwilny",
+          "śmieszna": "krotochwilna",
+          "smutny": "frasobliwy",
+          "smutna": "frasobliwa",
+          "szczęśliwy": "dobrej doli",
+          "szczęśliwa": "dobrej doli",
+          "szczęście": "dola pomyślna",
+          "miłość": "miłowanie",
+          "nie": "zgoła nie",
+          "tak": "zaiste",
+          "a": "a",
+          "i": "i",
+          "oraz": "tudzież",
+          "ale": "lecz",
+          "bo": "albowiem",
+          "ponieważ": "albowiem",
+          "więc": "przeto",
+          "dlatego": "z tejże przyczyny",
+          "jeśli": "jeśliż",
+          "gdy": "kiedy",
+          "kiedy": "kiedyż",
+          "kto": "któż",
+          "co": "cóż",
+          "gdzie": "gdzież",
+          "dokąd": "kąd",
+          "skąd": "z jakiegoż miejsca",
+          "jak": "jakże",
+          "jaki": "jakiż",
+          "jaka": "jakaż",
+          "który": "któryż",
+          "która": "któraż",
+          "mój": "mójże",
+          "moja": "mojaż",
+          "moje": "mojeż",
+          "twój": "waszmości",
+          "twoja": "waszmości",
+          "twoje": "waszmości",
+          "nasz": "naszże",
+          "nasza": "naszaż",
+          "wasz": "waszmościów",
+          "ja": "ja, niżej podpisany",
+          "mnie": "mnież",
+          "mi": "mnie",
+          "ty": "waszmość",
+          "ciebie": "waćpana",
+          "ci": "waćpanu",
+          "cię": "waćpana",
+          "on": "ów jegomość",
+          "ona": "owa niewiasta",
+          "oni": "owi jegomościowie",
+          "my": "my, niżej podpisani",
+          "wy": "waszmościowie",
+          "nas": "nas, niżej podpisanych",
+          "was": "waszmościów",
+          "ten": "ów",
+          "ta": "owa",
+          "to": "toć",
+          "te": "owe",
+          "tutaj": "tutej",
+          "tam": "tamże",
+          "zawsze": "zawżdy",
+          "nigdy": "nigdyż",
+          "często": "częstokroć",
+          "bardzo": "wielce",
+          "naprawdę": "zaiste",
+          "świetnie": "wybornie",
+          "świetny": "przedni",
+          "świetna": "przednia",
+          "fajnie": "przednio",
+          "fajny": "zacny",
+          "fajna": "zacna",
+          "super": "przedni",
+          "proszę": "proszęć waszmości",
+        };
+        const entries = Object.entries(words).sort((left, right) => right[0].length - left[0].length);
+        const pattern = new RegExp(`(^|[^\\p{L}])(${entries.map(([word]) => word).join("|")})(?=$|[^\\p{L}])`, "giu");
+        return text.replace(pattern, (match, prefix, word) => {
+          const normalized = word.toLocaleLowerCase("pl-PL");
+          const replacement = words[normalized];
+          if (!replacement) return prefix + word;
+          if (word === word.toLocaleUpperCase("pl-PL")) return prefix + replacement.toLocaleUpperCase("pl-PL");
+          if (word[0] === word[0].toLocaleUpperCase("pl-PL")) {
+            return prefix + replacement[0].toLocaleUpperCase("pl-PL") + replacement.slice(1);
+          }
+          return prefix + replacement;
+        });
+      }
+      function stylizeWords(text, words) {
+        const entries = Object.entries(words).sort((left, right) => right[0].length - left[0].length);
+        const pattern = new RegExp(`(^|[^\\p{L}])(${entries.map(([word]) => word).join("|")})(?=$|[^\\p{L}])`, "giu");
+        return text.replace(pattern, (match, prefix, word) => {
+          const replacement = words[word.toLocaleLowerCase("pl-PL")];
+          if (word === word.toLocaleUpperCase("pl-PL")) return prefix + replacement.toLocaleUpperCase("pl-PL");
+          if (word[0] === word[0].toLocaleUpperCase("pl-PL")) {
+            return prefix + replacement[0].toLocaleUpperCase("pl-PL") + replacement.slice(1);
+          }
+          return prefix + replacement;
+        });
+      }
+
+      function reverseText(text) {
+        if (typeof Intl.Segmenter === "function") {
+          const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+          return Array.from(segmenter.segment(text), (part) => part.segment).reverse().join("");
+        }
+        return Array.from(text).reverse().join("");
+      }
+
+      const pirateWords = {
+        "cześć": "ahoj",
+        "witaj": "ahoj",
+        "witam": "ahoj",
+        "dziękuję": "dzięki, kamracie",
+        "proszę": "a jakże, szczurze lądowy",
+        "tak": "arr",
+        "nie": "ani chybi nie",
+        "przyjaciel": "kamrat",
+        "przyjaciele": "kamraci",
+        "przyjacielu": "kamracie",
+        "statek": "okręt",
+        "morze": "siedem mórz",
+        "skarb": "skarby kapitana",
+        "pieniądze": "łup",
+        "jedzenie": "suchary",
+        "dom": "kajuta",
+        "dobrze": "jak po rumie",
+        "świetnie": "jak po rumie",
+        "chodź": "na pokład",
+        "idź": "na pokład"
+      };
+      const emojiWords = {
+        "cześć": "👋",
+        "witaj": "👋",
+        "kot": "🐈",
+        "koty": "🐈🐈",
+        "pies": "🐕",
+        "piesek": "🐶",
+        "ryba": "🐟",
+        "ryby": "🐟",
+        "dom": "🏠",
+        "serce": "❤️",
+        "miłość": "❤️",
+        "słońce": "☀️",
+        "księżyc": "🌙",
+        "gwiazda": "⭐",
+        "woda": "💧",
+        "ogień": "🔥",
+        "drzewo": "🌳",
+        "kawa": "☕",
+        "herbata": "🍵",
+        "pizza": "🍕",
+        "muzyka": "🎵",
+        "film": "🎬",
+        "książka": "📚",
+        "pieniądze": "💸",
+        "szczęście": "🍀",
+        "smutny": "😢",
+        "smutna": "😢",
+        "wesoły": "😄",
+        "wesoła": "😄",
+        "tak": "✅",
+        "nie": "❌",
+        "dziękuję": "🙏",
+        "proszę": "🫴",
+        "super": "✨",
+        "świetnie": "🎉"
+      };
+      const bureaucraticWords = {
+        "czy ty jesteś upośledzony": "czy powyższa wypowiedź ma charakter żartobliwy, czy wymaga doprecyzowania",
+        "czy jesteś upośledzony": "czy powyższa wypowiedź ma charakter żartobliwy, czy wymaga doprecyzowania",
+        "co ty sobie wyobrażasz": "proszę o przedstawienie podstaw przyjętego przez pana założenia",
+        "nie chce mi się": "na obecnym etapie nie deklaruję gotowości do podjęcia wskazanej czynności",
+        "nie mogę się doczekać": "z niecierpliwością oczekuję na termin realizacji",
+        "nie powinieneś tego robić": "rekomenduje się odstąpienie od podejmowania wskazanej czynności",
+        "nie wiem co robić": "wnoszę o wskazanie dalszego trybu postępowania",
+        "nie ma za co": "nie zachodzi konieczność składania dodatkowych podziękowań",
+        "wszystko w porządku": "stan sprawy nie budzi zastrzeżeń",
+        "co masz na myśli": "proszę o doprecyzowanie przedmiotu wypowiedzi",
+        "o czym mówisz": "proszę o wskazanie zakresu przedmiotowego wypowiedzi",
+        "nie gadaj głupot": "proszę o powstrzymanie się od przekazywania informacji niepotwierdzonych",
+        "przestań się wygłupiać": "wnoszę o zaprzestanie działań niemających związku ze sprawą",
+        "daj mi znać": "proszę o przekazanie informacji zwrotnej",
+        "nie martw się": "nie stwierdza się przesłanek do podjęcia działań niepokojowych",
+        "wszystkiego najlepszego": "składam życzenia pomyślności w dalszej realizacji planów",
+        "miłego dnia": "życzę efektywnego przebiegu bieżącego dnia",
+        "miłego wieczoru": "życzę pomyślnego przebiegu czasu wieczornego",
+        "jak się nazywasz": "proszę o podanie danych identyfikujących rozmówcę",
+        "skąd jesteś": "proszę o wskazanie miejsca pochodzenia",
+        "dokąd idziesz": "proszę o określenie planowanego kierunku przemieszczania się",
+        "ile to kosztuje": "proszę o podanie kwoty należności",
+        "co to jest": "proszę o przedstawienie opisu wskazanego przedmiotu",
+        "gdzie jest": "proszę o wskazanie lokalizacji",
+        "pomóż mi": "wnoszę o udzielenie mi stosownego wsparcia",
+        "potrzebuję pomocy": "zgłaszam zapotrzebowanie na udzielenie wsparcia",
+        "chodź ze mną": "proszę o wspólne przemieszczenie się we wskazanym kierunku",
+        "zostaw mnie w spokoju": "wnoszę o zaprzestanie kierowania do mnie dalszych komunikatów",
+        "idź stąd": "proszę o opuszczenie wskazanego obszaru",
+        "wynoś się": "wnoszę o niezwłoczne opuszczenie pomieszczenia",
+        "zamknij się": "wnoszę o zaprzestanie dalszego zabierania głosu",
+        "spierdalaj": "wnoszę o niezwłoczne oddalenie się z miejsca prowadzenia sprawy",
+        "wypierdalaj": "proszę o bezzwłoczne opuszczenie wskazanego obszaru",
+        "kurwa mać": "niniejszym wyrażam niezadowolenie z zaistniałych okoliczności",
+        "dziękuję za pomoc": "składam podziękowanie za udzielone wsparcie merytoryczne",
+        "bardzo mi przykro": "wyrażam ubolewanie z powodu zaistniałych okoliczności",
+        "to nie moja wina": "nie stwierdza się związku przyczynowego po mojej stronie",
+        "masz rację": "przedstawione stanowisko uznaje się za zasadne",
+        "nie masz racji": "przedstawione stanowisko nie znajduje potwierdzenia",
+        "dobrze cię widzieć": "odnotowuję pozytywny fakt ponownego kontaktu",
+        "uważaj na siebie": "proszę o zachowanie należytej ostrożności",
+        "zaraz przyjdę": "stawię się w najbliższym możliwym terminie",
+        "już idę": "przystępuję do realizacji czynności przemieszczania się",
+        "co u ciebie": "proszę o przedstawienie aktualnego statusu spraw",
+        "mam nadzieję": "wyrażam uzasadnione oczekiwanie",
+        "boję się": "zgłaszam odczuwanie niepokoju",
+        "jest mi zimno": "odnotowuję obniżony komfort cieplny",
+        "jest mi gorąco": "odnotowuję podwyższony komfort cieplny",
+        "jestem zmęczony": "stwierdzam obniżenie poziomu gotowości do dalszej pracy",
+        "jestem zmęczona": "stwierdzam obniżenie poziomu gotowości do dalszej pracy",
+        "jestem głodny": "zgłaszam zapotrzebowanie na posiłek",
+        "jestem głodna": "zgłaszam zapotrzebowanie na posiłek",
+        "jestem szczęśliwy": "odnotowuję pozytywny stan emocjonalny",
+        "jestem szczęśliwa": "odnotowuję pozytywny stan emocjonalny",
+        "to jest niesamowite": "wskazana okoliczność wykracza poza standardowy zakres oczekiwań",
+        "nie wierzę": "nie potwierdzam wiarygodności przekazanej informacji",
+        "rozumiem": "potwierdzam zapoznanie się z treścią komunikatu",
+        "nieprawda": "przekazana informacja nie znajduje potwierdzenia",
+        "prawda": "informacja znajduje potwierdzenie",
+        "oczywiście": "bezsprzecznie, z zastrzeżeniem obowiązujących procedur",
+        "na pewno": "z wysokim stopniem prawdopodobieństwa",
+        "moim zdaniem": "w mojej ocenie, z uwzględnieniem dostępnych danych",
+        "w każdym razie": "niezależnie od powyższych okoliczności",
+        "na przykład": "tytułem przykładu",
+        "w tej chwili": "na moment sporządzenia niniejszego komunikatu",
+        "po co": "w jakim celu realizowana jest wskazana czynność",
+        "dlaczego nie": "proszę o wskazanie przesłanek wykluczających realizację",
+        "ile masz lat": "proszę o podanie wieku w pełnych latach",
+        "jak długo": "proszę o wskazanie przewidywanego czasu trwania",
+        "witaj ponownie": "odnotowuję ponowne nawiązanie kontaktu",
+        "do widzenia": "niniejszym kończę bieżącą wymianę komunikatów",
+        "na zdrowie": "życząc zachowania dobrego stanu zdrowia",
+        "smacznego": "życzę pozytywnych doznań związanych ze spożyciem posiłku",
+        "nie mam pojęcia": "na podstawie dostępnych mi danych nie jestem w stanie ustalić odpowiedzi",
+        "nie wiem": "nie dysponuję informacją umożliwiającą udzielenie odpowiedzi",
+        "nie rozumiem": "proszę o ponowne przedstawienie informacji w sposób bardziej jednoznaczny",
+        "nie ma sprawy": "wskazana kwestia nie wymaga podejmowania dodatkowych działań",
+        "co ty robisz": "proszę o wskazanie celu realizowanych przez pana czynności",
+        "co się dzieje": "proszę o przedstawienie aktualnego stanu sprawy",
+        "jak się masz": "proszę o przekazanie informacji o aktualnym samopoczuciu",
+        "spierdalaj stąd": "wnoszę o niezwłoczne opuszczenie wskazanego miejsca",
+        "wypierdalaj stąd": "proszę o bezzwłoczne opuszczenie wskazanego miejsca",
+        "odpierdol się": "wnoszę o zaprzestanie kierowania do mnie dalszych żądań",
+        "zamknij mordę": "proszę o zaprzestanie dalszego formułowania wypowiedzi",
+        "co robisz": "proszę o wskazanie realizowanej czynności",
+        "daj mi spokój": "wnoszę o zaprzestanie dalszego kontaktu w tej sprawie",
+        "daj spokój": "proszę o odstąpienie od dalszego procedowania tej kwestii",
+        "idź sobie": "proszę o opuszczenie miejsca prowadzenia rozmowy",
+        "chodź tutaj": "proszę o stawienie się we wskazanej lokalizacji",
+        "zaraz wracam": "przewiduję wznowienie obecności w najbliższym możliwym terminie",
+        "do zobaczenia": "do ponownego kontaktu w ustalonym terminie",
+        "dobranoc": "życząc spokojnego przebiegu pory nocnej",
+        "dobry pomysł": "przedstawiona propozycja rokuje pozytywne rezultaty",
+        "świetna robota": "realizacja zadania spełnia wysokie kryteria jakościowe",
+        "bardzo ci dziękuję": "składam wyrazy podziękowania za współpracę",
+        "dziękuję bardzo": "niniejszym składam podziękowanie",
+        "kocham cię": "deklaruję występowanie silnej więzi emocjonalnej",
+        "co za głupota": "wskazane działanie nie posiada uzasadnienia merytorycznego",
+        "idź do diabła": "proszę o oddalenie się bez konieczności dalszego procedowania",
+        "cholera jasna": "wyrażam dezaprobatę wobec zaistniałych okoliczności",
+        "zajebiście": "rezultat należy ocenić jako wysoce satysfakcjonujący",
+        "głupi jesteś": "sposób rozumowania rozmówcy może wymagać dodatkowej weryfikacji",
+        "dzień dobry": "niniejszym rozpoczynam kontakt w bieżącym dniu",
+        "dobry wieczór": "niniejszym rozpoczynam kontakt w porze wieczornej",
+        "mam problem": "zgłaszam wystąpienie zagadnienia wymagającego analizy",
+        "mam pytanie": "wnoszę o udzielenie odpowiedzi na poniższe zagadnienie",
+        "mam prośbę": "kieruję wniosek o rozpatrzenie poniższej prośby",
+        "proszę o pomoc": "wnoszę o udzielenie wsparcia w przedmiotowej sprawie",
+        "proszę o kontakt": "wnoszę o nawiązanie komunikacji zwrotnej",
+        "proszę czekać": "proszę o pozostanie w gotowości do dalszych czynności",
+        "proszę powtórzyć": "wnoszę o ponowne przedstawienie komunikatu",
+        "proszę wyjaśnić": "wnoszę o przedstawienie stosownego uzasadnienia",
+        "proszę podpisać": "wymagane jest złożenie podpisu w wyznaczonym miejscu",
+        "proszę wypełnić": "wymagane jest uzupełnienie wszystkich pól formularza",
+        "nie zgadzam się": "nie podzielam przedstawionego stanowiska",
+        "zgadzam się": "akceptuję przedstawione warunki",
+        "to zależy": "rozstrzygnięcie jest uzależnione od dodatkowych okoliczności",
+        "nie jestem pewien": "nie dysponuję wystarczającymi danymi do jednoznacznego potwierdzenia",
+        "nie jestem pewna": "nie dysponuję wystarczającymi danymi do jednoznacznego potwierdzenia",
+        "wszystko jasne": "uznaje się, iż zakres informacji został przedstawiony w sposób zrozumiały",
+        "sprawa załatwiona": "postępowanie w przedmiotowej sprawie uznaje się za zakończone",
+        "to nie działa": "wskazane rozwiązanie nie realizuje oczekiwanej funkcjonalności",
+        "działa dobrze": "funkcjonowanie rozwiązania pozostaje zgodne z założeniami",
+        "brak odpowiedzi": "nie odnotowano komunikatu zwrotnego",
+        "nie mam czasu": "nie dysponuję obecnie zasobem czasu wymaganym do realizacji",
+        "mam czas": "dysponuję zasobem czasu umożliwiającym realizację",
+        "wrócę później": "ponowię kontakt w późniejszym terminie",
+        "odezwij się": "proszę o przekazanie komunikatu zwrotnego",
+        "to ważne": "wskazana kwestia posiada istotne znaczenie dla sprawy",
+        "to pilne": "wskazana kwestia wymaga niezwłocznej realizacji",
+        "bez problemu": "bez stwierdzonych przeszkód proceduralnych",
+        "nie ma problemu": "nie stwierdza się przeszkód w realizacji",
+        "wszystko jedno": "nie zgłaszam preferencji co do wariantu realizacji",
+        "mam dość": "osiągnięto graniczny poziom akceptacji zaistniałej sytuacji",
+        "co za dzień": "przebieg bieżącego dnia odbiega od oczekiwanego standardu",
+        "ale super": "niniejszym odnotowuję wyjątkowo korzystny rezultat",
+        "jesteś niesamowity": "pańskie działanie wykracza poza standardowy poziom realizacji",
+        "jesteś niesamowita": "pani działanie wykracza poza standardowy poziom realizacji",
+        "dobrze zrobione": "realizację wykonano zgodnie z wymaganiami jakościowymi",
+        "źle zrobione": "realizacja nie spełnia określonych kryteriów jakościowych",
+        "nie przeszkadzaj": "proszę o niezakłócanie dalszej realizacji czynności",
+        "zostaw to": "proszę o wstrzymanie dalszych działań w tym zakresie",
+        "zobaczymy": "kwestia zostanie poddana dalszej obserwacji",
+        "tak czy nie": "proszę o udzielenie jednoznacznej odpowiedzi twierdzącej albo przeczącej",
+        "co dalej": "proszę o wskazanie kolejnego etapu postępowania",
+        "kto to zrobił": "proszę o wskazanie osoby odpowiedzialnej za realizację",
+        "kiedy to będzie": "proszę o wskazanie przewidywanego terminu realizacji",
+        "gdzie to jest": "proszę o wskazanie lokalizacji przedmiotu sprawy",
+        "jak to zrobić": "proszę o przedstawienie procedury wykonania wskazanej czynności",
+        "jak to działa": "proszę o przedstawienie zasad funkcjonowania rozwiązania",
+        "ile to zajmie": "proszę o oszacowanie czasu niezbędnego do realizacji",
+        "co mam zrobić": "proszę o wskazanie czynności wymaganych po mojej stronie",
+        "daj znać": "proszę o przekazanie informacji po ustaleniu stanu sprawy",
+        "trzymaj się": "życząc zachowania dobrego stanu i gotowości do dalszego kontaktu",
+        "powodzenia": "życząc pomyślnej realizacji zamierzonych działań",
+        "miłego weekendu": "życząc pomyślnego przebiegu dni wolnych od pracy",
+        "wesołych świąt": "składam życzenia pomyślnego przebiegu okresu świątecznego",
+        "sto lat": "składam życzenia długotrwałego zachowania dobrego stanu zdrowia",
+        "wszystkiego dobrego": "składam życzenia pomyślności we wszystkich obszarach",
+        "przepraszam za problem": "wyrażam ubolewanie z tytułu zaistniałej niedogodności",
+        "przepraszam za spóźnienie": "wyrażam ubolewanie z tytułu przekroczenia uzgodnionego terminu",
+        "dziękuję za informację": "potwierdzam otrzymanie komunikatu i składam podziękowanie",
+        "dziękuję za wiadomość": "potwierdzam odbiór przekazanej wiadomości",
+        "informuję że": "niniejszym przekazuję informację, iż",
+        "chciałbym zapytać": "zwracam się z uprzejmym zapytaniem dotyczącym",
+        "chciałabym zapytać": "zwracam się z uprzejmym zapytaniem dotyczącym",
+        "w związku z tym": "mając na uwadze powyższe okoliczności",
+        "z góry dziękuję": "z wyprzedzeniem składam podziękowanie za współpracę",
+        "w razie pytań": "w przypadku wystąpienia dodatkowych zagadnień",
+        "dziękuję za uwagę": "niniejszym kończę wystąpienie i składam podziękowanie za uwagę",
+        "temat zamknięty": "postępowanie w przedmiotowym zakresie uznaje się za zakończone",
+        "cześć": "niniejszym potwierdzam przyjęcie pozdrowienia",
+        "tak": "udzielam odpowiedzi twierdzącej",
+        "nie": "udzielam odpowiedzi przeczącej",
+        "proszę": "zwracam się z uprzejmą prośbą o podjęcie stosownych działań",
+        "dziękuję": "składam podziękowanie za współpracę",
+        "teraz": "w bieżącym przedziale czasowym",
+        "dzisiaj": "w dniu sporządzenia niniejszego komunikatu",
+        "jutro": "w kolejnym dniu kalendarzowym",
+        "problem": "zagadnienie wymagające dalszej analizy",
+        "problemy": "zagadnienia wymagające dalszej analizy",
+        "pomóc": "udzielić wsparcia w ramach dostępnych zasobów",
+        "pomoc": "wsparcie w ramach dostępnych zasobów",
+        "dobrze": "zgodnie z przyjętymi założeniami",
+        "źle": "niezgodnie z obowiązującą procedurą",
+        "chcę": "zgłaszam zapotrzebowanie na realizację czynności",
+        "muszę": "zachodzi konieczność podjęcia działań",
+        "ważne": "posiadające istotność z punktu widzenia sprawy",
+        "spotkanie": "czynność konsultacyjno-uzgodnieniowa",
+        "wiadomość": "komunikat przekazany drogą informacyjną",
+        "pieniądze": "środki finansowe pozostające w dyspozycji",
+        "gotowe": "uznaje się za wykonane na obecnym etapie"
+      };
+
+      const formatterLabels = {
+        uppercase: "Wielkie litery",
+        lowercase: "Małe litery",
+        alternating: "sPoNgEbOb",
+        smallCaps: "Małe kapitaliki",
+        circled: "Litery w kółkach",
+        fullwidth: "Fullwidth",
+        superscript: "Indeks górny",
+        subscript: "Indeks dolny",
+        zalgo: "Zalgo",
+        upsideDown: "Do góry nogami",
+        reversed: "Odwrócony tekst"
+      };
+      const smallCaps = Object.fromEntries(
+        Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ", (letter, index) => [letter, Array.from("ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘꞯʀꜱᴛᴜᴠᴡxʏᴢ")[index]])
+      );
+      const circledUpper = Object.fromEntries(Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ", (letter, index) => [letter, String.fromCodePoint(0x24b6 + index)]));
+      const circledLower = Object.fromEntries(Array.from("abcdefghijklmnopqrstuvwxyz", (letter, index) => [letter, String.fromCodePoint(0x24d0 + index)]));
+      const digitCircled = Object.fromEntries(Array.from("0123456789", (digit, index) => [digit, String.fromCodePoint(index === 0 ? 0x24ea : 0x2460 + index - 1)]));
+      const upsideDown = {
+        a: "ɐ", b: "q", c: "ɔ", d: "p", e: "ǝ", f: "ɟ", g: "ƃ", h: "ɥ", i: "ᴉ", j: "ɾ",
+        k: "ʞ", l: "ן", m: "ɯ", n: "u", o: "o", p: "d", q: "b", r: "ɹ", s: "s", t: "ʇ",
+        u: "n", v: "ʌ", w: "ʍ", x: "x", y: "ʎ", z: "z",
+        A: "∀", B: "𐐒", C: "Ɔ", D: "◖", E: "Ǝ", F: "Ⅎ", G: "פ", H: "H", I: "I",
+        J: "ſ", K: "⋊", L: "˥", M: "W", N: "N", O: "O", P: "Ԁ", Q: "Ό", R: "ᴚ",
+        S: "S", T: "⊥", U: "∩", V: "Λ", W: "M", X: "X", Y: "⅄", Z: "Z",
+        ".": "˙", ",": "'", "'": ",", "\"": "„", "?": "¿", "!": "¡", "(": ")", ")": "(",
+        "[": "]", "]": "[", "{": "}", "}": "{", "_": "‾", "&": "⅋"
+      };
+      const superscript = {
+        "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+        "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾", n: "ⁿ", i: "ⁱ",
+        a: "ᵃ", b: "ᵇ", c: "ᶜ", d: "ᵈ", e: "ᵉ", f: "ᶠ", g: "ᵍ", h: "ʰ", j: "ʲ", k: "ᵏ",
+        l: "ˡ", m: "ᵐ", o: "ᵒ", p: "ᵖ", r: "ʳ", s: "ˢ", t: "ᵗ", u: "ᵘ", v: "ᵛ", w: "ʷ", x: "ˣ", y: "ʸ", z: "ᶻ"
+      };
+      const subscript = {
+        "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+        "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
+        a: "ₐ", e: "ₑ", h: "ₕ", i: "ᵢ", j: "ⱼ", k: "ₖ", l: "ₗ", m: "ₘ", n: "ₙ", o: "ₒ",
+        p: "ₚ", r: "ᵣ", s: "ₛ", t: "ₜ", u: "ᵤ", v: "ᵥ", x: "ₓ"
+      };
+
+      function mapWithCombiningMarks(character, alphabetMap) {
+        if (alphabetMap[character]) return alphabetMap[character];
+        const decomposed = character.normalize("NFD");
+        const first = decomposed[0];
+        const mapped = alphabetMap[first] || alphabetMap[first.toUpperCase()];
+        if (mapped) return mapped + decomposed.slice(1);
+        return character;
+      }
+
+      function formatText(text, mode) {
+        if (mode === "uppercase") return text.toLocaleUpperCase("pl-PL");
+        if (mode === "lowercase") return text.toLocaleLowerCase("pl-PL");
+        if (mode === "alternating") {
+          let uppercase = true;
+          return Array.from(text, (character) => {
+            if (!/\p{L}/u.test(character)) return character;
+            const result = uppercase ? character.toLocaleUpperCase("pl-PL") : character.toLocaleLowerCase("pl-PL");
+            uppercase = !uppercase;
+            return result;
+          }).join("");
+        }
+        if (mode === "smallCaps") {
+          return Array.from(text, (character) => mapWithCombiningMarks(character, smallCaps)).join("");
+        }
+        if (mode === "circled") {
+          return Array.from(text, (character) => circledUpper[character] || circledLower[character] || digitCircled[character] || character).join("");
+        }
+        if (mode === "fullwidth") {
+          return Array.from(text, (character) => {
+            const code = character.codePointAt(0);
+            if (code === 32) return "\u3000";
+            return code >= 33 && code <= 126 ? String.fromCodePoint(code + 0xfee0) : character;
+          }).join("");
+        }
+        if (mode === "superscript" || mode === "subscript") {
+          const map = mode === "superscript" ? superscript : subscript;
+          return Array.from(text, (character) => map[character] || map[character.toLowerCase()] || character).join("");
+        }
+        if (mode === "zalgo") {
+          const marks = ["̍", "̎", "̄", "̅", "̿", "̑", "̆", "͒", "͗", "͑", "̇", "̈", "̊", "͂", "̓", "̈", "͊", "͋", "̃", "̂", "̌"];
+          return Array.from(text, (character, index) => {
+            if (/\s/u.test(character)) return character;
+            const count = 2 + (index % 4);
+            return character + Array.from({ length: count }, (_, markIndex) => marks[(index * 3 + markIndex * 5) % marks.length]).join("");
+          }).join("");
+        }
+        if (mode === "upsideDown") {
+          return Array.from(text, (character) => character).reverse().map((character) => upsideDown[character] || character).join("");
+        }
+        if (mode === "reversed") return reverseText(text);
+        return text;
+      }
+
+      function convert(text, mode) {
+        const shift = Number($("shift").value);
+        if (mode === "caesar" && text && (!Number.isInteger(shift) || shift < 1 || shift > 25)) {
+          throw new Error("Przesunięcie musi być liczbą od 1 do 25.");
+        }
+        if (mode === "oldPolish") return stylizeOldPolish(text);
+        if (mode === "pirate") return stylizeWords(text, pirateWords);
+        if (mode === "emoji") return stylizeWords(text, emojiWords);
+        if (mode === "bureaucratic") return stylizeWords(text, bureaucraticWords);
+        if (mode === "cat") return decrypting ? decodeWords(text, cats) : encodeWords(text, cats);
+        if (mode === "fish") return decrypting ? decodeWords(text, fish) : encodeWords(text, fish);
+        if (mode === "binary") return decrypting ? decodeBinary(text) : encodeBinary(text);
+        if (mode === "hex") return decrypting ? decodeHex(text) : encodeHex(text);
+        if (mode === "base64") return decrypting ? decodeBase64(text) : encodeBase64(text);
+        if (mode === "url") return decrypting ? decodeUrl(text) : encodeUrl(text);
+        if (mode === "bacon") {
+          if (!decrypting) {
+            return Array.from(new TextEncoder().encode(text), (byte) => byte.toString(2).padStart(8, "0").replace(/0/g, "A").replace(/1/g, "B")).join(" ");
+          }
+          const tokens = text.trim() ? text.trim().split(/\s+/) : [];
+          if (tokens.some((token) => !/^[AB]{8}$/i.test(token))) throw new Error("Wpisz grupy ośmiu symboli A/B, np. AABABBAB.");
+          const bytes = Uint8Array.from(tokens, (token) => parseInt(token.replace(/A/gi, "0").replace(/B/gi, "1"), 2));
+          try {
+            return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          } catch {
+            throw new Error("Kod A/B nie tworzy poprawnego tekstu UTF-8.");
+          }
+        }
+        if (mode === "morse") return decrypting ? decodeMorse(text) : encodeMorse(text);
+        if (mode === "caesar") return rotateLatin(text, decrypting ? -shift : shift);
+        if (mode === "rot13") return rotateLatin(text, 13);
+        if (mode === "rot47") return Array.from(text, (character) => {
+          const code = character.codePointAt(0);
+          return code >= 33 && code <= 126 ? String.fromCharCode(33 + (code - 33 + 47) % 94) : character;
+        }).join("");
+        if (mode === "atbash") return atbash(text);
+        if (mode === "vigenere") return transformVigenere(text, $("cipherKey").value, decrypting);
+        if (mode === "autokey") return transformAutokey(text, $("cipherKey").value, decrypting);
+        if (mode === "reverse") return reverseText(text);
+        if (mode === "railFence") {
+          const rails = Number($("rails").value);
+          if (!Number.isInteger(rails)) throw new Error("Liczba szyn musi być liczbą całkowitą.");
+          return decrypting ? railFenceDecrypt(text, rails) : railFenceEncrypt(text, rails);
+        }
+        if (mode === "affine") return affine(text, decrypting);
+        return text;
+      }
+
+      function modeName(mode) {
+        return ({
+          cat: "Koci", fish: "Rybny", binary: "Binarny", morse: "Morse",
+          caesar: "Cezara", rot13: "ROT13", atbash: "Atbash",
+          rot47: "ROT47", vigenere: "Vigenère", autokey: "Autokey",
+          railFence: "Płotkowy", affine: "Afiniczny", bacon: "Bacon A/B",
+          hex: "Szesnastkowy", base64: "Base64", url: "URL",
+          reverse: "Od tyłu", oldPolish: "Staropolszczyzna",
+          pirate: "Piracki", emoji: "Emojijski", bureaucratic: "Urzędowy"
+        })[mode];
+      }
+
+      function update() {
+        const mode = $("mode").value;
+        const input = $("inputText").value;
+        const reverseMode = decrypting && mode !== "oldPolish";
+        $("shiftField").classList.toggle("visible", mode === "caesar");
+        $("keyField").classList.toggle("visible", mode === "vigenere" || mode === "autokey");
+        $("railsField").classList.toggle("visible", mode === "railFence");
+        $("affineField").classList.toggle("visible", mode === "affine");
+        const oneWayMode = ["oldPolish", "pirate", "emoji", "bureaucratic"].includes(mode);
+        $("directionButton").disabled = oneWayMode;
+        $("directionButton").title = oneWayMode ? "Ta stylizacja działa tylko w kierunku polski → stylizacja." : "";
+        $("directionMark").textContent = oneWayMode ? "→" : decrypting ? "←" : "→";
+        $("inputLabel").textContent = oneWayMode ? "Polski" : reverseMode ? modeName(mode) : "Tekst źródłowy";
+        $("outputLabel").textContent = oneWayMode ? modeName(mode) : reverseMode ? "Odszyfrowany tekst" : modeName(mode);
+        $("inputHeading").textContent = oneWayMode ? "Wpisz tekst po polsku" : reverseMode ? "Wpisz kod do odczytania" : "Wpisz tekst";
+        $("outputHeading").textContent = oneWayMode ? "Stylizacja" : reverseMode ? "Odczytany tekst" : "Tłumaczenie";
+        $("inputText").setAttribute("aria-label", oneWayMode ? "Tekst źródłowy po polsku" : reverseMode ? "Kod do odszyfrowania" : "Tekst do przetłumaczenia");
+        $("outputText").setAttribute("aria-label", oneWayMode ? "Wynik stylizacji" : reverseMode ? "Odszyfrowany tekst" : "Wynik tłumaczenia");
+        $("directionLabel").textContent = oneWayMode ? "Tylko w przód" : reverseMode ? "Odszyfruj" : "Zaszyfruj";
+        $("directionButton").setAttribute("aria-label", oneWayMode ? "Jednokierunkowa stylizacja" : decrypting ? "Zmień kierunek na szyfrowanie" : "Zmień kierunek na odszyfrowywanie");
+        $("modeNote").innerHTML = descriptions[mode];
+        $("inputCounter").textContent = `${Array.from(input).length} znaków`;
+        try {
+          const output = convert(input, mode);
+          $("outputText").value = output;
+          $("outputCounter").textContent = `${Array.from(output).length} znaków`;
+          $("copyButton").disabled = !output;
+          $("errorMessage").textContent = "";
+          $("errorMessage").classList.remove("visible");
+        } catch (error) {
+          $("outputText").value = "";
+          $("outputCounter").textContent = "0 znaków";
+          $("copyButton").disabled = true;
+          $("errorMessage").textContent = error instanceof Error ? error.message : "Nie udało się przetworzyć tekstu.";
+          $("errorMessage").classList.add("visible");
+        }
+      }
+
+      $("inputText").addEventListener("input", update);
+      $("mode").addEventListener("change", () => {
+        if (["oldPolish", "pirate", "emoji", "bureaucratic"].includes($("mode").value)) decrypting = false;
+        update();
+      });
+      ["shift", "cipherKey", "rails", "affineA", "affineB"].forEach((id) => $(id).addEventListener("input", update));
+      $("directionButton").addEventListener("click", () => {
+        decrypting = !decrypting;
+        update();
+      });
+      $("clearButton").addEventListener("click", () => {
+        $("inputText").value = "";
+        update();
+        $("inputText").focus();
+      });
+      $("copyButton").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText($("outputText").value);
+          $("copyButton").textContent = "Skopiowano!";
+          window.setTimeout(() => { $("copyButton").textContent = "Kopiuj wynik"; }, 1400);
+        } catch {
+          $("errorMessage").textContent = "Schowek jest niedostępny. Zaznacz wynik i skopiuj go ręcznie.";
+          $("errorMessage").classList.add("visible");
+        }
+      });
+      $("translateTab").addEventListener("click", () => {
+        $("translateTab").setAttribute("aria-selected", "true");
+        $("formatTab").setAttribute("aria-selected", "false");
+        $("translatePanel").hidden = false;
+        $("formatPanel").hidden = true;
+      });
+      $("formatTab").addEventListener("click", () => {
+        $("translateTab").setAttribute("aria-selected", "false");
+        $("formatTab").setAttribute("aria-selected", "true");
+        $("translatePanel").hidden = true;
+        $("formatPanel").hidden = false;
+        $("formatInput").focus();
+      });
+      const updateFormat = () => {
+        const input = $("formatInput").value;
+        const mode = $("formatMode").value;
+        const output = formatText(input, mode);
+        $("formatOutput").value = output;
+        $("formatOutputLabel").textContent = formatterLabels[mode];
+        $("formatInputCounter").textContent = `${Array.from(input).length} znaków`;
+        $("formatOutputCounter").textContent = `${Array.from(output).length} znaków`;
+        $("formatCopyButton").disabled = !output;
+        $("formatError").textContent = "";
+        $("formatError").classList.remove("visible");
+      };
+      $("formatInput").addEventListener("input", updateFormat);
+      $("formatMode").addEventListener("change", updateFormat);
+      $("formatClearButton").addEventListener("click", () => {
+        $("formatInput").value = "";
+        updateFormat();
+        $("formatInput").focus();
+      });
+      $("formatCopyButton").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText($("formatOutput").value);
+          $("formatCopyButton").textContent = "Skopiowano!";
+          window.setTimeout(() => { $("formatCopyButton").textContent = "Kopiuj wynik"; }, 1400);
+        } catch {
+          $("formatError").textContent = "Schowek jest niedostępny. Zaznacz wynik i skopiuj go ręcznie.";
+          $("formatError").classList.add("visible");
+        }
+      });
+      update();
+      updateFormat();
+    })();
+  </script>
+</body>
+</html>
